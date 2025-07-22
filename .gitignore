@@ -13,7 +13,7 @@ Data/Temp/*
 dist/
 Log/*
 Release/*
-tests/
+# tests/
 Tools/WebDriver/Edge/*
 
 __pycache__/
