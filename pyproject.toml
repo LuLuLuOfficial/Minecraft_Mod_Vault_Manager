@@ -2,7 +2,7 @@
 authors = [
   {name = "NuhilLucas", email = "xframilrainx@163.com"},
 ]
-dependencies = []
+dependencies = ["pylucas[fileops,log] (>=3.0.2,<4.0.0)"]
 description = ""
 name = "Minecraft-Mod-Vault-Manager"
 readme = "README.md"
@@ -15,6 +15,7 @@ packages = [{include = "mmvm", from = "src"}]
 [tool.poetry.group.web.dependencies]
 requests = "^2.32.4"
 lxml = "^6.0.0"
+aiohttp = "^3.12.14"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
