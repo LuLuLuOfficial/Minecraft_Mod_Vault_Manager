@@ -255,9 +255,11 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
             })
         return Projects
 
-    def Locate(self, URL: str) -> dict:
-        LogManager('Could not locate the project with MCMOD, Use MODRINTH or CURSEFORGE instead.')
-        return dict()
+    def Project(self, URL: str) -> dict:
+        pass
+
+    def Locate(self, URL: str) -> list[dict]:
+        return [{}]
 
 def GetInterface() -> Interface:
     return Interface()
