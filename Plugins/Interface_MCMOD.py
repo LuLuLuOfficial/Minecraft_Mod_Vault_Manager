@@ -6,10 +6,10 @@ from mmvm.Class.HTMLProcessor import HTMLElement as _HTMLElement_
 from mmvm.Public.Instances import LogManager
 
 version: str = '0.1.0'
-name: str = 'Interface_MCMOD'
+name: str = 'WebSiteAPI_MCMOD'
 author: str = 'NuhilLucas'
 
-class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的自动化获取
+class WebSiteAPI(): # 基本好了, 要做一下 __init__ 方法里面数据的自动化获取
     def __init__(self):
         self.project_types: dict = {'mod': 'modlist',
                                     'modpack': 'modpack'}
@@ -254,9 +254,11 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
             })
         return Projects
 
-    def Locate(self, URL: str) -> dict:
-        LogManager('Could not locate the project with MCMOD, Use MODRINTH or CURSEFORGE instead.')
-        return dict()
+    def Project(self, URL: str) -> dict:
+        pass
 
-def GetInterface() -> Interface:
-    return Interface()
+    def Locate(self, URL: str) -> list[dict]:
+        return [{}]
+
+def GetWebSiteAPI() -> WebSiteAPI:
+    return WebSiteAPI()

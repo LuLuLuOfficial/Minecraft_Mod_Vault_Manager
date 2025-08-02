@@ -4,6 +4,8 @@ from aiohttp import ClientSession as _ClientSession_
 from asyncio import gather as _asyncio_gather_
 from asyncio import run as _asyncio_run_
 
+from Plugins.Interface_Example import Interface_Basic
+
 version: str = '0.1.0'
 name: str = 'Interface_MODRINTH'
 author: str = 'NuhilLucas'
@@ -103,8 +105,14 @@ async def GetSideTypes(Session: _ClientSession_) -> dict:
     else: return SideTypes
     return {}
 
+def GetInterface():
+    async def Initialize() -> Interface:
+        zInterface = Interface()
+        await zInterface.async_init()
+        return zInterface
+    return _asyncio_run_(Initialize())
 
-class Interface(): # 根据 Interface_MCMOD 的规范写一下
+class Interface(Interface_Basic): # 根据 Interface_MCMOD 的规范写一下
     def __init__(self):
         
 
@@ -143,6 +151,26 @@ class Interface(): # 根据 Interface_MCMOD 的规范写一下
             )
         return self  # 支持链式调用
 
+    @property
+    def name(self) -> str:
+        return 'Interface_MODRINTH'
+    
+    @property
+    def version(self) -> str:
+        return '0.1.0'
+
+    @property
+    def ptype(self) -> str:
+        return 'Interface'
+
+    @property
+    def author(self) -> str:
+        return 'NuhilLucas'
+    
+    @property
+    def description(self) -> str:
+        return 'MODRINTH接口'
+
     def Explore(self, *,
                       project_type: str = '', # 项目类型
                       page: int = 1, # 页数
@@ -151,7 +179,7 @@ class Interface(): # 根据 Interface_MCMOD 的规范写一下
                       version: str = '', # 游戏版本
                       category: str = '', # 分类
                       sort: str = '', # 排序方式
-                      **addtional: dict):
+                      **addtional: dict) -> list[dict]:
         URL: str = 'https://api.modrinth.com/v2/search'
         params: dict = {
             'facets': {
@@ -196,7 +224,7 @@ class Interface(): # 根据 Interface_MCMOD 的规范写一下
 
         try:
             zResponse: _Response_ = _requests_get_(url=URL, params=params); zResponse.raise_for_status()
-        except Exception as E: return None
+        except Exception as E: return []
 
         Projects: list[dict] = []
 
@@ -289,7 +317,7 @@ class Interface(): # 根据 Interface_MCMOD 的规范写一下
 
         try:
             zResponse: _Response_ = _requests_get_(url=URL, params=params); zResponse.raise_for_status()
-        except Exception as E: return None
+        except Exception as E: return []
 
         Projects: list[dict] = []
 
@@ -314,6 +342,7 @@ class Interface(): # 根据 Interface_MCMOD 的规范写一下
                 'Name': Name,
                 'Name_CN': Name_CN,
                 'ID': ID,
+                'ProjectType': project_type,
                 'URL': URL,
                 'URL_Icon': URL_Icon,
                 'Description': Description,
@@ -328,20 +357,119 @@ class Interface(): # 根据 Interface_MCMOD 的规范写一下
 
         return Projects
 
-    def Locate(self):
-        pass
+    def Project(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
+                      **addtional: dict) -> dict:
+        ID: str = project_info['ID'] if 'ID' in project_info else ''
+        Slug: str = project_info['Name'] if 'Name' in project_info else ''
+        LocateKey: str = ID or Slug
+        if not LocateKey: return {}
 
-def GetInterface() -> Interface:
-    async def Initialize() -> Interface:
-        zInterface = Interface()
-        await zInterface.async_init()
-        return zInterface
-    return _asyncio_run_(Initialize())
+        URL: str = f'https://api.modrinth.com/v2/project/{ID or Slug}'
+
+        try:
+            zResponse: _Response_ = _requests_get_(url=URL)
+            zResponse.raise_for_status()
+            ProjectInfo: dict = zResponse.json()
+        except: return {}
+
+        ProjectInfo: dict = {
+                'SpecialInfo': {
+                    'WebSite':'Modrinth',
+                    'ID': ProjectInfo['id']
+                },
+
+                'ID': ProjectInfo['slug'],
+                'Name': ProjectInfo['title'],
+                'Name_CN': '',
+                'Description': ProjectInfo['description'],
+
+                'Icon_URL': ProjectInfo['icon_url'],
+
+                'SideType': {
+                    "Client": ProjectInfo['client_side'],
+                    "Server": ProjectInfo['server_side'],
+                },
+                'ProjectType': ProjectInfo['project_type'],
+                'Loaders': ProjectInfo['loaders'],
+                'GameVersions': ProjectInfo['game_versions'],
+        }
+
+        return ProjectInfo
+
+    def Locate(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
+                     versions: str | list[str] = '',
+                     **addtional: dict) -> list[dict]:
+        ID: str = project_info['ID'] if 'ID' in project_info else ''
+        Slug: str = project_info['Name'] if 'Name' in project_info else ''
+        LocateKey: str = ID or Slug
+
+        if (not project_info['SpecialInfo']['WebSite'] == 'Modrinth' and
+            not 'ProjectType' in project_info or
+            not project_info['ProjectType'] in self.project_types and
+            not LocateKey):
+            return []
+
+        URL: str = f'https://api.modrinth.com/v2/project/{ID or Slug}/version'
+        params: dict[str, list] = {
+            'loaders': [],
+            'game_versions': []
+        }
+
+        for version in versions if isinstance(versions, list) else [versions]:
+            if version in self.versions: params['game_versions'].append(f'\"{self.versions[version]}\"')
+
+        if 'loaders' in addtional:
+            for loader in addtional['loaders'] if isinstance(addtional['loaders'], list) else [addtional['loaders']]:
+                params['loaders'].append(f'\"{loader}\"')
+
+        for key in list(params): params[key] = '[' + ','.join(params[key]) + ']'
+
+        try:
+            zResponse: _Response_ = _requests_get_(url=URL, params=params)
+            zResponse.raise_for_status()
+            zProjectVersions: list[dict] = zResponse.json()
+        except: return []
+
+        ProjectVersions: list[dict] = []
+
+        for ProjectVersion in zProjectVersions:
+            ProjectVersions.append({
+                'SpecialInfo': {
+                    'WebSite':'Modrinth',
+                    'ID': project_info['SpecialInfo']['ID']
+                },
+
+                'ID': project_info['ID'],
+                'Name': project_info['Name'],
+                'Name_CN': project_info['Name_CN'],
+                'Description': project_info['Description'],
+
+                'ProjectType': project_info['ProjectType'],
+                'Dependency': {
+                    'GameVersion': ProjectVersion['game_versions'],
+                    'Loader': ProjectVersion['loaders'],
+                    'Projects': [Project['project_id'] for Project in ProjectVersion['dependencies']]
+                },
+                'SideType':  project_info['SideType'],
+
+                'Icon_URL': project_info['Icon_URL'],
+                'Files': [{
+                    'FileName': File['filename'],
+                    'URL': File['url'],
+                    'Hashes': File['hashes'],
+                } for File in ProjectVersion['files']]
+            })
+        
+        return ProjectVersions
 
 if __name__ == "__main__":
     test: Interface = GetInterface()
-    print(test.Search(query='carpet',
-                      project_type='mod',
-                      limit=1,
-                      version='1.17.1',
-                      loader='fabric'))
+    # print(test.Search(query='carpet',
+    #                   project_type='mod',
+    #                   limit=1,
+    #                   version='1.17.1',
+    #                   loader='fabric'))
+
+    ProjectInfo: dict = {'SpecialInfo': {'WebSite': 'Modrinth', 'ID': 'TQTTVgYE'}, 'ID': 'carpet', 'Name': 'Carpet', 'Name_CN': '', 'Description': 'Take full control over your vanilla game', 'Icon_URL': 'https://cdn.modrinth.com/data/TQTTVgYE/3ad650635d067b6bfa09403cf5e70e0947a05c07_96.webp', 'SideType': {'Client': 'unsupported', 'Server': 'required'}, 'ProjectType': 'mod', 'Loaders': ['fabric'], 'GameVersions': ['1.21.7']}
+
+    print(test.Locate(project_info=ProjectInfo, versions='1.21.7', loaders='fabric'))
