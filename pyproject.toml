@@ -13,10 +13,9 @@ version = "0.1.0"
 packages = [{include = "mmvm", from = "src"}]
 
 [tool.poetry.group.web.dependencies]
-requests = "^2.32.4"
-lxml = "^6.0.0"
 aiohttp = "^3.12.14"
-
+lxml = "^6.0.0"
+requests = "^2.32.4"
 
 [tool.poetry.group.backend.dependencies]
 fastapi = "^0.116.1"
