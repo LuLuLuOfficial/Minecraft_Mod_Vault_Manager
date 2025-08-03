@@ -15,4 +15,4 @@ poetry.lock
 *.spec
 
 !.gitkeep
-!tests\CreateTests.py
+!CreateTests.py
