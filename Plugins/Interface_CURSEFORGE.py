@@ -1,3 +1,4 @@
+from mmvm.Public.LogManager import LogManager
 from Plugins.Interface_BASIC import Interface as Interface_Basic
 
 class Interface(Interface_Basic): # 有反爬, 先不做
@@ -55,7 +56,6 @@ class Interface(Interface_Basic): # 有反爬, 先不做
                      versions: str | list[str] = '',
                      **addtional: dict):
         pass
-
 
 def GetInterface() -> Interface:
     return Interface()

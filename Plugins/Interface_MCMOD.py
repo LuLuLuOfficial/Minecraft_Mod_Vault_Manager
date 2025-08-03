@@ -1,12 +1,17 @@
-from requests import get as _requests_get_
-from requests.models import Response as _Response_
-from re import search as _re_search_
-from mmvm.Class.HTMLProcessor import FormatHTML as _FormatHTML_
-from mmvm.Class.HTMLProcessor import HTMLElement as _HTMLElement_
+from requests import get as requests_get
+from requests.models import Response as Response
+from re import search as re_search
+from mmvm.Class.HTMLProcessor import FormatHTML
+from mmvm.Class.HTMLProcessor import HTMLElement
 from Plugins.Interface_BASIC import Interface as Interface_Basic
+from requests import RequestException
+from base64 import b64decode
 
-class Interface(Interface_Basic): # 基本好了, 要做一下 __init__ 方法里面数据的自动化获取
+from mmvm.Public.LogManager import LogManager
+
+class Interface(Interface_Basic): # 只能通过跳转Modrinth获取项目
     def __init__(self):
+        super().__init__()
         self.project_types: dict = {'mod': 'modlist',
                                     'modpack': 'modpack'}
 
@@ -145,17 +150,17 @@ class Interface(Interface_Basic): # 基本好了, 要做一下 __init__ 方法�
             if params[Key] is None: params.pop(Key)
 
         try:
-            zResponse: _Response_ = _requests_get_(url=URL, params=params); zResponse.raise_for_status()
+            zResponse: Response = requests_get(url=URL, params=params); zResponse.raise_for_status()
         except Exception as E: return []
 
-        ProjectElements: list[_HTMLElement_] = _FormatHTML_(zResponse.text).SubElements('*//div[@class="modlist-list-frame"]//div[@class="modlist-block"]')
+        ProjectElements: list[HTMLElement] = FormatHTML(zResponse.text).SubElements('*//div[@class="modlist-list-frame"]//div[@class="modlist-block"]')
         Projects: list[dict] = []
 
         for ProjectElement in ProjectElements:
             URL: str = 'https://www.mcmod.cn' + ProjectElement.SubElement('./div[@class="title"]/p[@class="name"]/a[@target="_blank"]').Get('href')
             Name: str = ProjectElement.SubElement('./div[@class="title"]/p[@class="ename"]/a[@target="_blank"]').Text
             Name_CN: str = ProjectElement.SubElement('./div[@class="title"]/p[@class="name"]/a[@target="_blank"]').Text
-            ID: str = _re_search_(rf'(\d+)\.html', URL.split('/')[-1])[1]
+            ID: str = re_search(rf'(\d+)\.html', URL.split('/')[-1])[1]
 
             URL_Icon: str = 'https:' + ProjectElement.SubElement('./div[@class="cover"]/a[@target="_blank"]/img').Get('src')
             Description: str = ProjectElement.SubElement('./div[@class="intro"]/a/span').Text
@@ -235,17 +240,17 @@ class Interface(Interface_Basic): # 基本好了, 要做一下 __init__ 方法�
             if params[Key] is None or params[Key] == '': params.pop(Key)
 
         try:
-            zResponse: _Response_ = _requests_get_(url=URL, params=params); zResponse.raise_for_status()
+            zResponse: Response = requests_get(url=URL, params=params); zResponse.raise_for_status()
         except Exception as E: return []
 
-        ProjectElements: list[_HTMLElement_] = _FormatHTML_(zResponse.text).SubElements('*//div[@class="modlist-list-frame"]//div[@class="modlist-block"]')
+        ProjectElements: list[HTMLElement] = FormatHTML(zResponse.text).SubElements('*//div[@class="modlist-list-frame"]//div[@class="modlist-block"]')
         Projects: list[dict] = []
 
         for ProjectElement in ProjectElements:
             URL: str = 'https://www.mcmod.cn' + ProjectElement.SubElement('./div[@class="title"]/p[@class="name"]/a[@target="_blank"]').Get('href')
             Name: str = ProjectElement.SubElement('./div[@class="title"]/p[@class="ename"]/a[@target="_blank"]').Text
             Name_CN: str = ProjectElement.SubElement('./div[@class="title"]/p[@class="name"]/a[@target="_blank"]').Text
-            ID: str = _re_search_(rf'(\d+)\.html', URL.split('/')[-1])[1]
+            ID: str = re_search(rf'(\d+)\.html', URL.split('/')[-1])[1]
 
             URL_Icon: str = 'https:' + ProjectElement.SubElement('./div[@class="cover"]/a[@target="_blank"]/img').Get('src')
             Description: str = ProjectElement.SubElement('./div[@class="intro"]/a/span').Text
@@ -278,118 +283,101 @@ class Interface(Interface_Basic): # 基本好了, 要做一下 __init__ 方法�
 
     def Project(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
                       **addtional: dict) -> dict:
+        """_summary_
+
+        Args:
+            project_info (dict): _description_
+            **addtional: dict => {
+                'loader': str
+            }
+
+        Returns:
+            dict: _description_
+        """
         if not 'URL' in project_info: return {}
+        ProjectName: str = f'<{project_info['Name_CN']}>' if 'Name_CN' in project_info else f'<{project_info['Name']}>' if 'Name' in project_info else 'Project'
         URL: str = project_info['URL']
+        Slug: str = ''
 
         try:
-            zResponse: _Response_ = _requests_get_(url=URL)
+            zResponse: Response = requests_get(url=URL)
             zResponse.raise_for_status()
 
-            CommonLinks: list[_HTMLElement_] = _FormatHTML_(zResponse.text).SubElements('*//ul[@class="common-link-icon-frame common-link-icon-frame-style-3"]/li')
-            CommonLinks = {CommonLink.SubElement('./span').Get('title'): 'https:' + CommonLink.SubElement('./a').Get('href') for CommonLink in CommonLinks if CommonLink.SubElement('./span').Get('title') == 'Modrinth'}
+            CommonLinks: list[HTMLElement] = FormatHTML(zResponse.text).SubElements('*//ul[@class="common-link-icon-frame common-link-icon-frame-style-3"]/li')
+            CommonLinks: dict[str, str] = {CommonLink.SubElement('./a').Get('data-original-title'): CommonLink.SubElement('./a').Get('href').split('/')[-1] for CommonLink in CommonLinks if CommonLink.SubElement('./span').Get('title') == 'Modrinth'}
+            SortedCommonLinks: list[list] = [[], [], []] # Include <Loader> | Equal To 'Modrinth' | Have Other Characters
+            Loader: str = addtional['loader'].upper() if 'loader' in addtional else 'HaveNoLoader'
+            for Key in list(CommonLinks):
+                if Loader in Key.upper():
+                    SortedCommonLinks[0].append(CommonLinks[Key])
+                    continue
+                elif Key.upper() == 'MODRINTH':
+                    SortedCommonLinks[1].append(CommonLinks[Key])
+                    continue
+                else:
+                    SortedCommonLinks[2].append(CommonLinks[Key])
+                    continue
 
-            zResponse = _requests_get_(CommonLinks['Modrinth'])
-            zResponse.raise_for_status()
-        except: return {}
-
-        Slug: str = zResponse.url.split('/')[-1]
+            for CommonLinks in SortedCommonLinks:
+                if CommonLinks:
+                    Slug = b64decode(CommonLinks[0]).decode('utf-8')
+                    Slug = Slug[:-1].split('/')[-1] if Slug[-1] == '/' else Slug.split('/')[-1]
+                    break
+            else:
+                LogManager(f"{ProjectName} In MCMod Has No Common Link To Modrinth")
+                return {}
+        except Exception as E:
+            LogManager(f"{ProjectName} Get Unexpected Exception When Link To Modrinth Porject: {E}")
+            return {}
 
         URL: str = f'https://api.modrinth.com/v2/project/{Slug}'
 
         try:
-            zResponse: _Response_ = _requests_get_(url=URL)
+            zResponse: Response = requests_get(url=URL)
             zResponse.raise_for_status()
             ProjectInfo: dict = zResponse.json()
-        except: return {}
+        except RequestException as E:
+            match E.response.status_code:
+                case 404:
+                    LogManager(f"{ProjectName} In MCMod Has A Invalid Common Link To Modrinth")
+                case _:
+                    LogManager(f"{ProjectName} In MCMod Has A RequestException: {E}")
+            return {}
+        except Exception as E:
+            LogManager(f"{ProjectName} Get Unexpected Exception When Link To Modrinth Porject: {E}")
+            return {}
 
-        ProjectInfo: dict = {
-                'SpecialInfo': {
-                    'WebSite':'Modrinth',
-                    'ID': ProjectInfo['id']
-                },
+        return {
+            'SpecialInfo': {
+                'WebSite':'Modrinth',
+                'ID': ProjectInfo['id']
+            },
 
-                'ID': ProjectInfo['slug'],
-                'Name': ProjectInfo['title'],
-                'Name_CN': project_info['Name_CN'],
-                'Description': ProjectInfo['description'],
+            'ID': ProjectInfo['slug'],
+            'Name': ProjectInfo['title'],
+            'Name_CN': project_info['Name_CN'] if 'Name_CN' in project_info else '',
+            'Description': ProjectInfo['description'],
 
-                'Icon_URL': ProjectInfo['icon_url'],
+            'Icon_URL': ProjectInfo['icon_url'],
 
-                'SideType': {
-                    "Client": ProjectInfo['client_side'],
-                    "Server": ProjectInfo['server_side'],
-                },
-                'ProjectType': ProjectInfo['project_type'],
-                'Loaders': ProjectInfo['loaders'],
-                'GameVersions': ProjectInfo['game_versions'],
-        }
+            'SideType': {
+                "Client": ProjectInfo['client_side'],
+                "Server": ProjectInfo['server_side'],
+            },
+            'ProjectType': ProjectInfo['project_type'],
+            'Loaders': ProjectInfo['loaders'],
+            'GameVersions': ProjectInfo['game_versions'],
+            }
 
-        return ProjectInfo
-
-    def Locate(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
+    def Locate(self, project_info: dict, # 项目信息 来源于 Project 的返回值
                      versions: str | list[str] = '',
                      **addtional: dict) -> list[dict]:
-        ID: str = project_info['ID'] if 'ID' in project_info else ''
-        Slug: str = project_info['Name'] if 'Name' in project_info else ''
-        LocateKey: str = ID or Slug
+        if not project_info: return []
 
-        if (not project_info['SpecialInfo']['WebSite'] == 'Modrinth' and
-            not 'ProjectType' in project_info or
-            not project_info['ProjectType'] in self.project_types and
-            not LocateKey):
-            return []
+        from mmvm.Public.Interface_MODRINTH import Interface_MODRINTH
 
-        URL: str = f'https://api.modrinth.com/v2/project/{ID or Slug}/version'
-        params: dict[str, list] = {
-            'loaders': [],
-            'game_versions': []
-        }
+        ProjectVersions: list[dict] = Interface_MODRINTH.Locate(project_info, versions=versions, **addtional)
 
-        for version in versions if isinstance(versions, list) else [versions]:
-            if version in self.versions: params['game_versions'].append(f'\"{self.versions[version]}\"')
-
-        if 'loaders' in addtional:
-            for loader in addtional['loaders'] if isinstance(addtional['loaders'], list) else [addtional['loaders']]:
-                params['loaders'].append(f'\"{loader}\"')
-
-        for key in list(params): params[key] = '[' + ','.join(params[key]) + ']'
-
-        try:
-            zResponse: _Response_ = _requests_get_(url=URL, params=params)
-            zResponse.raise_for_status()
-            zProjectVersions: list[dict] = zResponse.json()
-        except: return []
-
-        ProjectVersions: list[dict] = []
-
-        for ProjectVersion in zProjectVersions:
-            ProjectVersions.append({
-                'SpecialInfo': {
-                    'WebSite':'Modrinth',
-                    'ID': project_info['SpecialInfo']['ID']
-                },
-
-                'ID': project_info['ID'],
-                'Name': project_info['Name'],
-                'Name_CN': project_info['Name_CN'],
-                'Description': project_info['Description'],
-
-                'ProjectType': project_info['ProjectType'],
-                'Dependency': {
-                    'GameVersion': ProjectVersion['game_versions'],
-                    'Loader': ProjectVersion['loaders'],
-                    'Projects': [Project['project_id'] for Project in ProjectVersion['dependencies']]
-                },
-                'SideType':  project_info['SideType'],
-
-                'Icon_URL': project_info['Icon_URL'],
-                'Files': [{
-                    'FileName': File['filename'],
-                    'URL': File['url'],
-                    'Hashes': File['hashes'],
-                } for File in ProjectVersion['files']]
-            })
-        
         return ProjectVersions
 
 def GetInterface() -> Interface:

@@ -3,6 +3,7 @@
 Archive/*
 build/
 
+Data/FromBookmarks
 dist/
 Log/*
 Release/*
