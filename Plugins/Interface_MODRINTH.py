@@ -3,12 +3,7 @@ from requests.models import Response as _Response_
 from aiohttp import ClientSession as _ClientSession_
 from asyncio import gather as _asyncio_gather_
 from asyncio import run as _asyncio_run_
-
-from Plugins.Interface_Basic import Interface as Interface_Basic
-
-version: str = '0.1.0'
-name: str = 'Interface_MODRINTH'
-author: str = 'NuhilLucas'
+from Plugins.Interface_BASIC import Interface as Interface_Basic
 
 APIs: dict[str, str] = {
     'GetProjectType': 'https://api.modrinth.com/v2/tag/project_type',
@@ -105,17 +100,8 @@ async def GetSideTypes(Session: _ClientSession_) -> dict:
     else: return SideTypes
     return {}
 
-def GetInterface():
-    async def Initialize() -> Interface:
-        zInterface = Interface()
-        await zInterface.async_init()
-        return zInterface
-    return _asyncio_run_(Initialize())
-
 class Interface(Interface_Basic): # 根据 Interface_MCMOD 的规范写一下
     def __init__(self):
-        
-
         self.project_types: dict = None
 
         self.sort_types: dict = None
@@ -171,15 +157,17 @@ class Interface(Interface_Basic): # 根据 Interface_MCMOD 的规范写一下
     def description(self) -> str:
         return 'MODRINTH接口'
 
-    def Explore(self, *,
-                      project_type: str = '', # 项目类型
-                      page: int = 1, # 页数
-                      limit: int = 10, # 返回数量限制
-                      offset: int = 0, # 偏移量
-                      version: str = '', # 游戏版本
-                      category: str = '', # 分类
-                      sort: str = '', # 排序方式
-                      **addtional: dict) -> list[dict]:
+    def Explore(self,
+        *,
+        project_type: str = '', # 项目类型
+        page: int = 1, # 页数
+        limit: int = 10, # 返回数量限制
+        offset: int = 0, # 偏移量
+        version: str = '', # 游戏版本
+        category: str = '', # 分类
+        sort: str = '', # 排序方式
+        **addtional: dict
+    ) -> list[dict]:
         URL: str = 'https://api.modrinth.com/v2/search'
         params: dict = {
             'facets': {
@@ -263,16 +251,18 @@ class Interface(Interface_Basic): # 根据 Interface_MCMOD 的规范写一下
 
         return Projects
 
-    def Search(self, *,
-                     query: str = '', # 搜索关键字
-                     project_type: str = '', # 项目类型
-                     page: int = 1, # 页数
-                     limit: int = 10, # 返回数量限制
-                     offset: int = 0, # 偏移量
-                     version: str = '', # 游戏版本
-                     category: str = '', # 分类
-                     sort: str = '', # 排序方式
-                     **addtional: dict) -> list[dict]:
+    def Search(self,
+        *,
+        query: str = '', # 搜索关键字
+        project_type: str = '', # 项目类型
+        page: int = 1, # 页数
+        limit: int = 10, # 返回数量限制
+        offset: int = 0, # 偏移量
+        version: str = '', # 游戏版本
+        category: str = '', # 分类
+        sort: str = '', # 排序方式
+        **addtional: dict
+    ) -> list[dict]:
         URL: str = 'https://api.modrinth.com/v2/search'
         params: dict = {
             'facets': {
@@ -462,14 +452,36 @@ class Interface(Interface_Basic): # 根据 Interface_MCMOD 的规范写一下
         
         return ProjectVersions
 
+def GetInterface():
+    async def Initialize() -> Interface:
+        zInterface = Interface()
+        await zInterface.async_init()
+        return zInterface
+    return _asyncio_run_(Initialize())
+
 if __name__ == "__main__":
-    test: Interface = GetInterface()
-    # print(test.Search(query='carpet',
-    #                   project_type='mod',
-    #                   limit=1,
-    #                   version='1.17.1',
-    #                   loader='fabric'))
+    from pprint import pprint
+    
+    zInterface: Interface = GetInterface()
 
-    ProjectInfo: dict = {'SpecialInfo': {'WebSite': 'Modrinth', 'ID': 'TQTTVgYE'}, 'ID': 'carpet', 'Name': 'Carpet', 'Name_CN': '', 'Description': 'Take full control over your vanilla game', 'Icon_URL': 'https://cdn.modrinth.com/data/TQTTVgYE/3ad650635d067b6bfa09403cf5e70e0947a05c07_96.webp', 'SideType': {'Client': 'unsupported', 'Server': 'required'}, 'ProjectType': 'mod', 'Loaders': ['fabric'], 'GameVersions': ['1.21.7']}
+    # Explore
+    print('='*50)
+    pprint(zInterface.Explore(project_type='mod'))
 
-    print(test.Locate(project_info=ProjectInfo, versions='1.21.7', loaders='fabric'))
+    # Search
+    print('='*50)
+    pprint(zInterface.Search(query='carpet',
+                             project_type='mod',
+                             limit=1,
+                             version='1.17.1',
+                             loader='fabric'))
+    
+    # # Project
+    # print('='*50)
+    # project_info: dict = {'Author': 'altrisi','Categories': ['fabric', 'game-mechanics', 'utility'],'Description': 'Take full control over your vanilla game','Downloads': 2704425,'Environment': {'client_side': 'unsupported', 'server_side': 'required'},'ID': 'TQTTVgYE','Likes': 1793,'ModifiedDate': '2025-07-01T16:55:41.807912Z','Name': 'Carpet','Name_CN': '','ProjectType': 'mod','URL': 'https://modrinth.com/mod/carpet','URL_Icon': 'https://cdn.modrinth.com/data/TQTTVgYE/3ad650635d067b6bfa09403cf5e70e0947a05c07_96.webp','Versions': ['1.21.7']}
+    # pprint(zInterface.Project(project_info=project_info))
+
+    # Locate
+    print('='*50)
+    project_info: dict = {'SpecialInfo': {'WebSite': 'Modrinth', 'ID': 'TQTTVgYE'}, 'ID': 'carpet', 'Name': 'Carpet', 'Name_CN': '', 'Description': 'Take full control over your vanilla game', 'Icon_URL': 'https://cdn.modrinth.com/data/TQTTVgYE/3ad650635d067b6bfa09403cf5e70e0947a05c07_96.webp', 'SideType': {'Client': 'unsupported', 'Server': 'required'}, 'ProjectType': 'mod', 'Loaders': ['fabric'], 'GameVersions': ['1.21.7']}
+    print(zInterface.Locate(project_info=project_info, versions='1.21.7', loaders='fabric'))

@@ -3,14 +3,9 @@ from requests.models import Response as _Response_
 from re import search as _re_search_
 from mmvm.Class.HTMLProcessor import FormatHTML as _FormatHTML_
 from mmvm.Class.HTMLProcessor import HTMLElement as _HTMLElement_
-from mmvm.Public.Instances import LogManager
-from Plugins.Interface_Basic import Interface as Interface_Basic
+from Plugins.Interface_BASIC import Interface as Interface_Basic
 
-version: str = '0.1.0'
-name: str = 'Interface_MCMOD'
-author: str = 'NuhilLucas'
-
-class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的自动化获取
+class Interface(Interface_Basic): # 基本好了, 要做一下 __init__ 方法里面数据的自动化获取
     def __init__(self):
         self.project_types: dict = {'mod': 'modlist',
                                     'modpack': 'modpack'}
@@ -85,15 +80,37 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
         self.query_types: dict = {'mod': {'精准搜索': None,
                                           '模糊搜索': 'ngram'}}
 
-    def Explore(self, *,
-                      project_type: str = '', # 项目类型
-                      page: int = 1, # 页数
-                      limit: int = 10, # 返回数量限制
-                      offset: int = 0, # 偏移量
-                      version: str = '', # 游戏版本
-                      category: str = '', # 分类
-                      sort: str = '', # 排序方式
-                      **addtional: dict):
+    @property
+    def name(self) -> str:
+        return 'Interface_MCMOD'
+    
+    @property
+    def version(self) -> str:
+        return '0.1.0'
+
+    @property
+    def ptype(self) -> str:
+        return 'Interface'
+
+    @property
+    def author(self) -> str:
+        return 'NuhilLucas'
+    
+    @property
+    def description(self) -> str:
+        return 'MCMOD 接口'
+
+    def Explore(self,
+        *,
+        project_type: str = '', # 项目类型
+        page: int = 1, # 页数
+        limit: int = 10, # 返回数量限制
+        offset: int = 0, # 偏移量
+        version: str = '', # 游戏版本
+        category: str = '', # 分类
+        sort: str = '', # 排序方式
+        **addtional: dict
+    ) -> list[dict]:
 
         URL: str = f'https://www.mcmod.cn/'
         params: dict = {}
@@ -143,19 +160,20 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
             URL_Icon: str = 'https:' + ProjectElement.SubElement('./div[@class="cover"]/a[@target="_blank"]/img').Get('src')
             Description: str = ProjectElement.SubElement('./div[@class="intro"]/a/span').Text
             Author: str = ''
-            Categories: str = ''
+            Categories: str = []
             Downloads: str = ''
             Likes: str = ''
             ModifiedDate: str = ''
-            Versions: str = ''
-            Environment: str = ''
+            Versions: str = []
+            Environment: str = {}
 
             Projects.append({
                 'URL': URL,
                 'Name': Name,
                 'Name_CN': Name_CN,
                 'ID': ID,
-                
+
+                'ProjectType': project_type,
                 'URL_Icon': URL_Icon,
                 'Description': Description,
                 'Author': Author,
@@ -168,16 +186,18 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
             })
         return Projects
 
-    def Search(self, *,
-                     query: str = '', # 搜索关键字
-                     project_type: str = '', # 项目类型
-                     page: int = 1, # 页数
-                     limit: int = 10, # 返回数量限制
-                     offset: int = 0, # 偏移量
-                     version: str = '', # 游戏版本
-                     category: str = '', # 分类
-                     sort: str = '', # 排序方式
-                     **addtional: dict) -> list[dict]:
+    def Search(self,
+        *,
+        query: str = '', # 搜索关键字
+        project_type: str = '', # 项目类型
+        page: int = 1, # 页数
+        limit: int = 10, # 返回数量限制
+        offset: int = 0, # 偏移量
+        version: str = '', # 游戏版本
+        category: str = '', # 分类
+        sort: str = '', # 排序方式
+        **addtional: dict
+    ) -> list[dict]:
         
         URL: str = f'https://www.mcmod.cn/'
         params: dict = {}
@@ -230,19 +250,20 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
             URL_Icon: str = 'https:' + ProjectElement.SubElement('./div[@class="cover"]/a[@target="_blank"]/img').Get('src')
             Description: str = ProjectElement.SubElement('./div[@class="intro"]/a/span').Text
             Author: str = ''
-            Categories: str = ''
+            Categories: str = []
             Downloads: str = ''
             Likes: str = ''
             ModifiedDate: str = ''
-            Versions: str = ''
-            Environment: str = ''
+            Versions: str = []
+            Environment: str = {}
 
             Projects.append({
                 'URL': URL,
                 'Name': Name,
                 'Name_CN': Name_CN,
                 'ID': ID,
-                
+
+                'ProjectType': project_type,
                 'URL_Icon': URL_Icon,
                 'Description': Description,
                 'Author': Author,
@@ -255,11 +276,144 @@ class Interface(): # 基本好了, 要做一下 __init__ 方法里面数据的�
             })
         return Projects
 
-    def Project(self, URL: str) -> dict:
-        pass
+    def Project(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
+                      **addtional: dict) -> dict:
+        if not 'URL' in project_info: return {}
+        URL: str = project_info['URL']
 
-    def Locate(self, URL: str) -> list[dict]:
-        return [{}]
+        try:
+            zResponse: _Response_ = _requests_get_(url=URL)
+            zResponse.raise_for_status()
+
+            CommonLinks: list[_HTMLElement_] = _FormatHTML_(zResponse.text).SubElements('*//ul[@class="common-link-icon-frame common-link-icon-frame-style-3"]/li')
+            CommonLinks = {CommonLink.SubElement('./span').Get('title'): 'https:' + CommonLink.SubElement('./a').Get('href') for CommonLink in CommonLinks if CommonLink.SubElement('./span').Get('title') == 'Modrinth'}
+
+            zResponse = _requests_get_(CommonLinks['Modrinth'])
+            zResponse.raise_for_status()
+        except: return {}
+
+        Slug: str = zResponse.url.split('/')[-1]
+
+        URL: str = f'https://api.modrinth.com/v2/project/{Slug}'
+
+        try:
+            zResponse: _Response_ = _requests_get_(url=URL)
+            zResponse.raise_for_status()
+            ProjectInfo: dict = zResponse.json()
+        except: return {}
+
+        ProjectInfo: dict = {
+                'SpecialInfo': {
+                    'WebSite':'Modrinth',
+                    'ID': ProjectInfo['id']
+                },
+
+                'ID': ProjectInfo['slug'],
+                'Name': ProjectInfo['title'],
+                'Name_CN': project_info['Name_CN'],
+                'Description': ProjectInfo['description'],
+
+                'Icon_URL': ProjectInfo['icon_url'],
+
+                'SideType': {
+                    "Client": ProjectInfo['client_side'],
+                    "Server": ProjectInfo['server_side'],
+                },
+                'ProjectType': ProjectInfo['project_type'],
+                'Loaders': ProjectInfo['loaders'],
+                'GameVersions': ProjectInfo['game_versions'],
+        }
+
+        return ProjectInfo
+
+    def Locate(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
+                     versions: str | list[str] = '',
+                     **addtional: dict) -> list[dict]:
+        ID: str = project_info['ID'] if 'ID' in project_info else ''
+        Slug: str = project_info['Name'] if 'Name' in project_info else ''
+        LocateKey: str = ID or Slug
+
+        if (not project_info['SpecialInfo']['WebSite'] == 'Modrinth' and
+            not 'ProjectType' in project_info or
+            not project_info['ProjectType'] in self.project_types and
+            not LocateKey):
+            return []
+
+        URL: str = f'https://api.modrinth.com/v2/project/{ID or Slug}/version'
+        params: dict[str, list] = {
+            'loaders': [],
+            'game_versions': []
+        }
+
+        for version in versions if isinstance(versions, list) else [versions]:
+            if version in self.versions: params['game_versions'].append(f'\"{self.versions[version]}\"')
+
+        if 'loaders' in addtional:
+            for loader in addtional['loaders'] if isinstance(addtional['loaders'], list) else [addtional['loaders']]:
+                params['loaders'].append(f'\"{loader}\"')
+
+        for key in list(params): params[key] = '[' + ','.join(params[key]) + ']'
+
+        try:
+            zResponse: _Response_ = _requests_get_(url=URL, params=params)
+            zResponse.raise_for_status()
+            zProjectVersions: list[dict] = zResponse.json()
+        except: return []
+
+        ProjectVersions: list[dict] = []
+
+        for ProjectVersion in zProjectVersions:
+            ProjectVersions.append({
+                'SpecialInfo': {
+                    'WebSite':'Modrinth',
+                    'ID': project_info['SpecialInfo']['ID']
+                },
+
+                'ID': project_info['ID'],
+                'Name': project_info['Name'],
+                'Name_CN': project_info['Name_CN'],
+                'Description': project_info['Description'],
+
+                'ProjectType': project_info['ProjectType'],
+                'Dependency': {
+                    'GameVersion': ProjectVersion['game_versions'],
+                    'Loader': ProjectVersion['loaders'],
+                    'Projects': [Project['project_id'] for Project in ProjectVersion['dependencies']]
+                },
+                'SideType':  project_info['SideType'],
+
+                'Icon_URL': project_info['Icon_URL'],
+                'Files': [{
+                    'FileName': File['filename'],
+                    'URL': File['url'],
+                    'Hashes': File['hashes'],
+                } for File in ProjectVersion['files']]
+            })
+        
+        return ProjectVersions
 
 def GetInterface() -> Interface:
     return Interface()
+
+if __name__ == '__main__':
+    from pprint import pprint
+
+    zInterface: Interface = GetInterface()
+
+    # Explore
+    print('='*50)
+    pprint(zInterface.Explore(project_type='mod'))
+
+    # Search
+    print('='*50)
+    pprint(zInterface.Search(query='现代化 UI', project_type='mod'))
+
+    # Project
+    print('='*50)
+    project_info: dict = {'URL': 'https://www.mcmod.cn/class/2454.html', 'Name': 'Modern UI', 'Name_CN': '[MUI] 现代化 UI', 'ProjectType': 'mod', 'ID': '2454', 'URL_Icon': 'https://i.mcmod.cn/class/cover/20200712/1594541230_694_XzkS.jpg@170x115.jpg', 'Description': '高性能现代化图形用户界面引擎，功能十分丰富！', 'Author': '', 'Categories': '', 'Downloads': '', 'Likes': '', 'ModifiedDate': '', 'Versions': '', 'Environment': ''}
+    pprint(zInterface.Project(project_info=project_info))
+
+    # Locate
+    print('='*50)
+    project_info: dict = {'SpecialInfo': {'WebSite': 'Modrinth', 'ID': '3sjzyvGR'}, 'ID': 'modern-ui', 'Name': 'Modern UI', 'Name_CN': '[MUI] 现代化 UI', 'Description': 'Modern desktop graphics application framework and low-level 3D graphics engine', 'Icon_URL': 'https://cdn.modrinth.com/data/3sjzyvGR/7967a20b1dc7e7bfd63aced5a2a20d8fde812c78_96.webp', 'SideType': {'Client': 'required', 'Server': 'unsupported'}, 'ProjectType': 'mod', 'Loaders': ['fabric', 'forge', 'neoforge', 'quilt'], 'GameVersions': ['1.18.1', '1.18.2', '1.19.2', '1.19.4', '1.20', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21', '1.21.1', '1.21.2', '1.21.3', '1.21.4']}
+    pprint(zInterface.Locate(project_info=project_info, versions='1.20.1', loaders='fabric'))

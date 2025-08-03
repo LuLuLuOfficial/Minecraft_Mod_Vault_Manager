@@ -43,28 +43,32 @@ class Interface(ABC):
         pass
 
     @abstractmethod
-    def Explore(self, *,
-                      project_type: str = '', # 项目类型
-                      page: int = 1, # 页数
-                      limit: int = 10, # 返回数量限制
-                      offset: int = 0, # 偏移量
-                      version: str = '', # 游戏版本
-                      category: str = '', # 分类
-                      sort: str = '', # 排序方式
-                      **addtional: dict) -> list[dict]:
+    def Explore(self,
+        *,
+        project_type: str = '', # 项目类型
+        page: int = 1, # 页数
+        limit: int = 10, # 返回数量限制
+        offset: int = 0, # 偏移量
+        version: str = '', # 游戏版本
+        category: str = '', # 分类
+        sort: str = '', # 排序方式
+        **addtional: dict
+    ) -> list[dict]:
         pass
 
     @abstractmethod
-    def Search(self, *,
-                     query: str = '', # 搜索关键字
-                     project_type: str = '', # 项目类型
-                     page: int = 1, # 页数
-                     limit: int = 10, # 返回数量限制
-                     offset: int = 0, # 偏移量
-                     version: str = '', # 游戏版本
-                     category: str = '', # 分类
-                     sort: str = '', # 排序方式
-                     **addtional: dict) -> list[dict]:
+    def Search(self,
+        *,
+        query: str = '', # 搜索关键字
+        project_type: str = '', # 项目类型
+        page: int = 1, # 页数
+        limit: int = 10, # 返回数量限制
+        offset: int = 0, # 偏移量
+        version: str = '', # 游戏版本
+        category: str = '', # 分类
+        sort: str = '', # 排序方式
+        **addtional: dict
+    ) -> list[dict]:
         pass
 
     @abstractmethod
