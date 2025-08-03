@@ -2,19 +2,11 @@
 .VSCodeCounter/
 Archive/*
 build/
-Data/Config/*
-Data/Cookies/*
-Data/Headers/*
-Data/History/xiaohongshu/*
-Data/Posts/xiaohongshu/*
-Data/Rules/xiaohongshu/*
-Data/Temp/*
 
 dist/
 Log/*
 Release/*
 tests/*
-Tools/WebDriver/Edge/*
 
 __pycache__/
 
