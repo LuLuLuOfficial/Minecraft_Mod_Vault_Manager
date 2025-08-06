@@ -2,28 +2,21 @@ from abc import ABC, abstractmethod
 from urllib3 import Retry
 from requests.adapters import HTTPAdapter
 from requests import Session
+from requests import get
 
 class Interface(ABC):
     @abstractmethod
     def __init__(self):
-        self.Session: Session
-        self.get: Session.get
+        self.Session: Session = None
+        self.get = get
 
         self.project_types: dict
-        
         self.sort_types: dict
-
         self.versions: set
-        
         self.categories: dict
-
         self.loaders: dict
-
         self.side_types: dict
-        
         self.query_types: dict
-    
-        self.RetryConfig()
 
     @property
     @abstractmethod
@@ -52,8 +45,9 @@ class Interface(ABC):
 
     def RetryConfig(self,
         RetryTimes: int = 5,
-        StatuCodes: list[int] = [429],
-        BackoffFactor: float = 0.5
+        StatuCodes: list[int] = [],
+        BackoffFactor: float = 0.5,
+        Disable: bool = False,
     ):
         RetryStrategy = Retry(
             total=RetryTimes,  # 最多重试 5 次
@@ -65,8 +59,8 @@ class Interface(ABC):
         zSession.mount("http://", zHTTPAdapter)
         zSession.mount("https://", zHTTPAdapter)
 
-        self.Session = zSession
-        self.get = self.Session.get
+        self.Session = zSession if not Disable else None
+        self.get = self.Session.get if not Disable else get
 
     @abstractmethod
     def Explore(self,

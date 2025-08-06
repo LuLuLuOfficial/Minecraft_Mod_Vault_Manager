@@ -14,11 +14,9 @@ class Interface(Interface_Basic): # 只能通过跳转Modrinth获取项目
         super().__init__()
         self.project_types: dict = {'mod': 'modlist',
                                     'modpack': 'modpack'}
-
         self.sort_types: dict = {'_default_': None,
                                  'time_create': 'createtime',
                                  'time_lastedit': 'lastedittime'}
-
         self.versions: set = {'_all_': None, '远古版本': 'earlier', 
                               '1.21.x': '1.21.x', '1.21.7': '1.21.7', '1.21.6': '1.21.6', '1.21.5': '1.21.5', '1.21.4': '1.21.4',
                               '1.21.3': '1.21.3', '1.21.2': '1.21.2', '1.21.1': '1.21.1', '1.21': '1.21', '1.20.x': '1.20.x',
@@ -38,7 +36,6 @@ class Interface(Interface_Basic): # 只能通过跳转Modrinth获取项目
                               '1.7.4': '1.7.4', '1.7.2': '1.7.2', '1.6.x': '1.6.x', '1.6.4': '1.6.4', '1.6.2': '1.6.2',
                               '1.5.2': '1.5.2', '1.4.x': '1.4.x', '1.4.7': '1.4.7', '1.4.3': '1.4.3', '1.4.2': '1.4.2',
                               '1.3.2': '1.3.2', '1.2.5': '1.2.5'}
-
         self.categories: dict = {'mod': {'_all_': None,
                                          '科技': 1, '魔法': 2, '冒险': 3, '农业': 4,
                                          '装饰': 5, 'LIB': 7, '安全': 6, '资源': 8,
@@ -54,7 +51,6 @@ class Interface(Interface_Basic): # 只能通过跳转Modrinth获取项目
                                              '地图': 5, '任务': 6, '硬核': 7, '休闲': 8,
                                              '大型': 9, '轻量': 10, '剧情': 11, '水槽': 12,
                                              '空岛': 13, 'PvP': 14, '国创': 15}}
-
         self.loaders: dict = {'mod': {'_all_': None,
                                       'forge':1,
                                       'fabric':2,
@@ -74,14 +70,12 @@ class Interface(Interface_Basic): # 只能通过跳转Modrinth获取项目
                                           'liteloader':5,
                                           'rift':6,
                                           'neoforge':7}}
-
         self.side_types: dict = {'mod': {'_all_': None,
                                          '仅客户端': 1,
                                          '仅服务端': 2,
                                          '主客户端': 3,
                                          '主服务端': 4,
                                          '皆需安装': 5}}
-
         self.query_types: dict = {'mod': {'精准搜索': None,
                                           '模糊搜索': 'ngram'}}
 

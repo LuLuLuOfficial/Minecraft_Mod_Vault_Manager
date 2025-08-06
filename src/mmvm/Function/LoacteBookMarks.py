@@ -5,10 +5,6 @@ from typing import Literal
 from copy import deepcopy
 
 from mmvm.Public.LogManager import LogManager
-from Plugins.Interface_BASIC import Interface
-from mmvm.Public.Interface_CURSEFORGE import Interface_CURSEFORGE
-from mmvm.Public.Interface_MCMOD import Interface_MCMOD
-from mmvm.Public.Interface_MODRINTH import Interface_MODRINTH
 
 def GetBookmarks(Source: str,
                  Target: str = f'Data/FromBookmarks/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json') -> tuple[dict, str]:
@@ -28,11 +24,14 @@ def GetBookmarks(Source: str,
     zBookmarks: list = []
     for BookMarkGroup in Bookmarks:
         if BookMarkGroup['type'] == 'folder':
-            zBookmarks += BookMarkGroup['children']
+            zBookmarks.extend(BookMarkGroup['children'])
+        elif BookMarkGroup['type'] == 'url':
+            zBookmarks.append(BookMarkGroup)
 
     Bookmarks: dict = {
         BookMark['name'][:-27] if BookMark['name'].endswith(' - MC百科|最大的Minecraft中文MOD百科') else BookMark['name']: BookMark['url']
-        for BookMark in zBookmarks if not BookMark['url'].startswith('https://www.mcmod.cn/modlist.html')
+        for BookMark in zBookmarks
+        if not BookMark['url'].startswith('https://www.mcmod.cn/modlist.html')
         }
 
     with open(file=Target, mode='w', encoding='utf-8') as File:
@@ -45,6 +44,11 @@ def LocateBookmarks(Engine: Literal['CurseForge', 'MCMod', 'Modrinth'],
                     Bookmarks: dict[str, str] = {},
                     versions: str | list[str] = '',
                     **addtional: dict) -> dict:
+    from Plugins.Interface_BASIC import Interface
+    from mmvm.Public.Interface_CURSEFORGE import Interface_CURSEFORGE
+    from mmvm.Public.Interface_MCMOD import Interface_MCMOD
+    from mmvm.Public.Interface_MODRINTH import Interface_MODRINTH
+
     zInterface: Interface
     match Engine:
         case 'CurseForge': zInterface = Interface_CURSEFORGE

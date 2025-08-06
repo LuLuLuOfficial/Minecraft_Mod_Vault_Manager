@@ -98,6 +98,8 @@ def GetSideTypes() -> dict:
 class Interface(Interface_Basic):
     def __init__(self):
         super().__init__()
+        self.RetryConfig(StatuCodes=[429])
+
         self.project_types: dict = None
         self.sort_types: dict = None
         self.versions: dict = None
@@ -338,29 +340,27 @@ class Interface(Interface_Basic):
             ProjectInfo: dict = zResponse.json()
         except: return {}
 
-        ProjectInfo: dict = {
-                'SpecialInfo': {
-                    'WebSite':'Modrinth',
-                    'ID': ProjectInfo['id']
-                },
+        return {
+            'SpecialInfo': {
+                'WebSite':'Modrinth',
+                'ID': ProjectInfo['id']
+            },
 
-                'ID': ProjectInfo['slug'],
-                'Name': ProjectInfo['title'],
-                'Name_CN': '',
-                'Description': ProjectInfo['description'],
+            'ID': ProjectInfo['slug'],
+            'Name': ProjectInfo['title'],
+            'Name_CN': project_info['Name_CN'] if 'Name_CN' in project_info else '',
+            'Description': ProjectInfo['description'],
 
-                'Icon_URL': ProjectInfo['icon_url'],
+            'Icon_URL': ProjectInfo['icon_url'],
 
-                'SideType': {
-                    "Client": ProjectInfo['client_side'],
-                    "Server": ProjectInfo['server_side'],
-                },
-                'ProjectType': ProjectInfo['project_type'],
-                'Loaders': ProjectInfo['loaders'],
-                'GameVersions': ProjectInfo['game_versions'],
+            'SideType': {
+                "Client": ProjectInfo['client_side'],
+                "Server": ProjectInfo['server_side'],
+            },
+            'ProjectType': ProjectInfo['project_type'],
+            'Loaders': ProjectInfo['loaders'],
+            'GameVersions': ProjectInfo['game_versions'],
         }
-
-        return ProjectInfo
 
     def Locate(self, project_info: dict, # 项目信息 来源于 Explore 或 Search 的返回值
                      versions: str | list[str] = '',
