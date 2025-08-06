@@ -265,11 +265,11 @@ class DownloaderThreadPool():
             with open(FilePath, mode) as f:
                 if start is not None: f.seek(start)
                 for Chunk in zResponse.iter_content(chunk_size=8192):
-                    print(f'区块写入开始{time()}')
+                    # print(f'区块写入开始{time()}')
                     if Chunk:
                         f.write(Chunk)
                         update_progress(len(Chunk))
-                    print(f'区块写入结束{time()}')
+                    # print(f'区块写入结束{time()}')
         except Exception as E:
             LogManager(f"任务 <{TaskName}> 异常: 下载失败, 未预见的错误: [{type(E)}|{str(E)}] <url|{TaskURL}>", 'Error')
             raise
