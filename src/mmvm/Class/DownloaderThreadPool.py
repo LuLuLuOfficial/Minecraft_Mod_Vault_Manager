@@ -351,7 +351,6 @@ class DownloaderThreadPool():
         return [{
             'name': Task['name'],
             'url': Task['url'],
-            'path': Task['path'],
             'file': Task['file'],
             'size': Task['size'],
             'hash': {
@@ -372,7 +371,6 @@ if __name__ == "__main__":
     Tasks = [{
         'name': 'test_download_1',
         'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
         'file': 'files/test1.jar',
         'size': 0,
         'hash': {
@@ -389,7 +387,6 @@ if __name__ == "__main__":
     }, {
         'name': 'test_download_2',
         'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
         'file': 'files/test2.jar',
         'size': 0,
         'hash': {
@@ -406,7 +403,6 @@ if __name__ == "__main__":
     }, {
         'name': 'test_download_3',
         'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
         'file': 'files/test3.jar',
         'size': 0,
         'hash': {
@@ -423,7 +419,6 @@ if __name__ == "__main__":
     }, {
         'name': 'test_download_4',
         'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
         'file': 'files/test4.jar',
         'size': 0,
         'hash': {
@@ -440,7 +435,6 @@ if __name__ == "__main__":
     }, {
         'name': 'test_download_5',
         'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
         'file': 'files/test5.jar',
         'size': 0,
         'hash': {
@@ -457,7 +451,6 @@ if __name__ == "__main__":
     }, {
         'name': 'test_download_6',
         'url': 'https://curl.se/download/curl-8.9.1.tar.gz',
-        'path': 'files',
         'file': 'files/curl-8.9.1.tar.gz',
         'size': 0,
         'hash': {

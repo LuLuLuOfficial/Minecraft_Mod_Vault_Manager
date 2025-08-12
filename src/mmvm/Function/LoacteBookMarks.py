@@ -8,6 +8,10 @@ from mmvm.Public.LogManager import LogManager
 
 def GetBookmarks(Source: str,
                  Target: str = f'Data/FromBookmarks/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.json') -> tuple[dict, str]:
+    def GetNameCN(Tittle: str) -> str:
+        Name_CN: str = Tittle[:-27] if Tittle.endswith(' - MC百科|最大的Minecraft中文MOD百科') else Tittle
+        Name_CN = Name_CN[:Name_CN.rfind(' (')] if ' (' in Name_CN and Name_CN[-1] == ')' else Name_CN
+        return Name_CN
     Bookmarks: dict = {}
     with open(file=Source, mode='r', encoding='utf-8') as File:
         Bookmarks = json_load(File)
@@ -29,7 +33,7 @@ def GetBookmarks(Source: str,
             zBookmarks.append(BookMarkGroup)
 
     Bookmarks: dict = {
-        BookMark['name'][:-27] if BookMark['name'].endswith(' - MC百科|最大的Minecraft中文MOD百科') else BookMark['name']: BookMark['url']
+        GetNameCN(BookMark['name']): BookMark['url']
         for BookMark in zBookmarks
         if not BookMark['url'].startswith('https://www.mcmod.cn/modlist.html')
         }
@@ -69,7 +73,7 @@ def LocateBookmarks(Engine: Literal['CurseForge', 'MCMod', 'Modrinth'],
 
     for Key, Value in Bookmarks.items():
         LogManager(f'Now Trying to Locate: <{Key} | {Value}>')
-        Name_CN = Key[:Key.rfind(' (')] if ' (' in Key and Key[-1] == ')' else Key
+        Name_CN = Key
         ProjectInfo: dict = zInterface.Project(project_info={'URL': Value, 'Name_CN': Name_CN}, **addtional)
         ProjectInfo: list = zInterface.Locate(project_info=ProjectInfo, versions=versions, **addtional_Locate)
         if ProjectInfo:
@@ -79,7 +83,7 @@ def LocateBookmarks(Engine: Literal['CurseForge', 'MCMod', 'Modrinth'],
             LogManager(f'Locate: ❌ <{Key}> Failed')
             Locate_Failed[Key] = Value
 
-    with open(file=BookmarksPath, mode='w', encoding='utf-8') as File:
+    with open(file=BookmarksPath.replace('.json', 'Succeed.json'), mode='w', encoding='utf-8') as File:
         json_dump(Locate_Succeed, File, ensure_ascii=False, indent=4)
 
     with open(file=BookmarksPath.replace('.json', 'Failed.json'), mode='w', encoding='utf-8') as File:
@@ -87,4 +91,5 @@ def LocateBookmarks(Engine: Literal['CurseForge', 'MCMod', 'Modrinth'],
 
 if __name__ == '__main__':
     Bookmarks, BookmarksPath = GetBookmarks(Source=r"C:\Users\Lucas\AppData\Local\Google\Chrome\User Data\Default\Bookmarks")
+    print(f"Count Of Marked Mods: {len(Bookmarks)}")
     LocateBookmarks(Engine='MCMod', BookmarksPath=BookmarksPath, Bookmarks=Bookmarks, versions='1.20.1', loader='fabric')

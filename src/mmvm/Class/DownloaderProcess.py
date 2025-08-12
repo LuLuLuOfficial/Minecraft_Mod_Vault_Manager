@@ -48,7 +48,16 @@ class DownloaderProcess(Process):
     def Shutdown(self):
         LogManager("下载器: 专用进程接受关闭信号, 开始尝试结束下载器")
         self.SDController.send('Shutdown')
-        LogManager("下载器: DownloaderThreadPool 线程池结束信号已发送, 进入等待")
+        LogManager("下载器: DownloaderThreadPool 线程池结束信号已发送")
+        for Index in range(15):
+            if self.SDController.poll() and self.SDController.recv() == 'TryShutdown':
+                LogManager("下载器: DownloaderThreadPool 线程池结束指令已被 DownloaderProcess 进程工作循环接收并执行, 开始等待 DownloaderThreadPool 线程结束")
+                break
+            else:
+                sleep(1.0)
+        else:
+            LogManager("下载器: DownloaderThreadPool 线程池结束指令无法被 DownloaderProcess 进程工作循环接收并执行, 尝试结束下载器失败")
+            return None
         self.join()
         if self.SDController.poll(1): return self.SDController.recv()
 
@@ -91,12 +100,12 @@ class DownloaderProcess(Process):
                 } for Task in self.Tasks])
 
             if self.SDExecutor.poll() and self.SDExecutor.recv() == 'Shutdown':
+                self.SDExecutor.send('TryShutdown')
                 self.SDExecutor.send(self.zDownloader.Shutdown())
                 self.zDownloader.MasterThread.join()
                 self.TaskAnswer.send([{
                     'name': Task['name'],
                     'url': Task['url'],
-                    'path': Task['path'],
                     'file': Task['file'],
                     'size': Task['size'],
                     'hash': {
@@ -134,93 +143,13 @@ if __name__ == '__main__':
     # 测试任务
     Tasks = [{
         'name': 'test_download_1',
-        'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
+        'url': 'https://www.wireshark.org/download/win64/all-versions/Wireshark-4.4.8-x64.exe',
         'path': 'files',
-        'file': 'files/test1.jar',
+        'file': 'files/WiresharkPortable64_4.4.8.paf.exe',
         'size': 0,
         'hash': {
             'hash_type': 'sha1',
             'hash_value': 'b4fec680269af21b1c6a4c3f41fc1a725cf5499b'
-        },
-        'progress': 0,
-        'status': 'NotAdded',
-        'timestamp': {
-            'start': 0.0,
-            'end': 0.0
-        }
-    }, {
-        'name': 'test_download_2',
-        'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
-        'file': 'files/test2.jar',
-        'size': 0,
-        'hash': {
-            'hash_type': 'sha1',
-            'hash_value': 'b4fec680269af21b1c6a4c3f41fc1a725cf5499b'
-        },
-        'progress': 0,
-        'status': 'NotAdded',
-        'timestamp': {
-            'start': 0.0,
-            'end': 0.0
-        }
-    }, {
-        'name': 'test_download_3',
-        'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
-        'file': 'files/test3.jar',
-        'size': 0,
-        'hash': {
-            'hash_type': 'sha1',
-            'hash_value': 'b4fec680269af21b1c6a4c3f41fc1a725cf5499b'
-        },
-        'progress': 0,
-        'status': 'NotAdded',
-        'timestamp': {
-            'start': 0.0,
-            'end': 0.0
-        }
-    }, {
-        'name': 'test_download_4',
-        'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
-        'file': 'files/test4.jar',
-        'size': 0,
-        'hash': {
-            'hash_type': 'sha1',
-            'hash_value': 'b4fec680269af21b1c6a4c3f41fc1a725cf5499b'
-        },
-        'progress': 0,
-        'status': 'NotAdded',
-        'timestamp': {
-            'start': 0.0,
-            'end': 0.0
-        }
-    }, {
-        'name': 'test_download_5',
-        'url': 'https://cdn.modrinth.com/data/SFQA3vF5/versions/nrqAIQFr/%21MoonlitPEM_2.1.3_FABRIC.jar',
-        'path': 'files',
-        'file': 'files/test5.jar',
-        'size': 0,
-        'hash': {
-            'hash_type': 'sha1',
-            'hash_value': 'b4fec680269af21b1c6a4c3f41fc1a725cf5499b'
-        },
-        'progress': 0,
-        'status': 'NotAdded',
-        'timestamp': {
-            'start': 0.0,
-            'end': 0.0
-        }
-    }, {
-        'name': 'test_download_6',
-        'url': 'https://curl.se/download/curl-8.9.1.tar.gz',
-        'path': 'files',
-        'file': 'files/curl-8.9.1.tar.gz',
-        'size': 0,
-        'hash': {
-            'hash_type': '',
-            'hash_value': ''
         },
         'progress': 0,
         'status': 'NotAdded',
@@ -262,5 +191,10 @@ if __name__ == '__main__':
         print(Finished, States)
         if Finished and States: break
 
-    pprint(zDownloader.Shutdown())
+    ShutdownResult: list | None = None
+    while ShutdownResult == None:
+        ShutdownResult = zDownloader.Shutdown()
+        sleep(1)
+        print('结束失败')
+    pprint(ShutdownResult)
 
